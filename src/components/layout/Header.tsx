@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import config from '../../../client.config'
 import { CartIcon } from './CartIcon'
+import CartDrawer from '@/components/cart/CartDrawer'
 
 export function Header() {
   return (
@@ -24,7 +25,7 @@ export function Header() {
               Entrar
             </Link>
           )}
-          <CartIcon />
+          <CartDrawer trigger={<CartIcon />} />
         </div>
       </div>
     </header>

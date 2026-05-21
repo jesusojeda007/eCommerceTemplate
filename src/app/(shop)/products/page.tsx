@@ -6,15 +6,20 @@ import { FilterSidebar } from '@/components/filters/FilterSidebar'
 import config from '../../../../client.config'
 
 interface PageProps {
-  searchParams: Promise<{ category?: string; search?: string }>
+  searchParams: Promise<{ category?: string; search?: string; minPrice?: string; maxPrice?: string }>
 }
 
 export default async function ProductsPage({ searchParams }: PageProps) {
   const params = await searchParams
+  const minPrice = params.minPrice ? Number(params.minPrice) : undefined
+  const maxPrice = params.maxPrice ? Number(params.maxPrice) : undefined
+
   const [products, categories] = await Promise.all([
     getProducts({
       categorySlug: params.category,
       search: params.search,
+      minPrice,
+      maxPrice,
     }),
     getCategories(),
   ])
@@ -24,7 +29,11 @@ export default async function ProductsPage({ searchParams }: PageProps) {
       <h1 className="text-2xl font-bold mb-6">Productos</h1>
       <div className="flex flex-col md:flex-row gap-8">
         <Suspense>
-          <FilterSidebar categories={categories} />
+          <FilterSidebar
+            categories={categories}
+            initialMinPrice={minPrice ?? 0}
+            initialMaxPrice={maxPrice ?? 200}
+          />
         </Suspense>
         <div className="flex-1">
           {config.features.searchBar && (

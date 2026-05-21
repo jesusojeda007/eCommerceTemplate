@@ -42,6 +42,8 @@ const config: ClientConfig = {
     primary: '#16a34a',
     background: '#ffffff',
     foreground: '#0a0a0a',
+    // Note: font must also be updated in src/app/layout.tsx (Next.js font optimization
+    // requires static string literals and cannot be driven by runtime config).
     font: 'Inter',
   },
 

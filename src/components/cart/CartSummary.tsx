@@ -6,9 +6,13 @@ import { useCartStore } from '@/lib/store/cart'
 import { CouponInput } from './CouponInput'
 import config from '../../../client.config'
 
-export function CartSummary() {
+interface CartSummaryProps {
+  hideCheckoutLink?: boolean
+}
+
+export function CartSummary({ hideCheckoutLink = false }: CartSummaryProps) {
   const { getSummary, coupon } = useCartStore()
-  const { subtotal, couponDiscount, total } = getSummary()
+  const { subtotal, volumeDiscount, couponDiscount, total } = getSummary()
 
   return (
     <div className="rounded-lg border p-6 space-y-4 bg-muted/30">
@@ -19,6 +23,12 @@ export function CartSummary() {
           <span className="text-muted-foreground">Subtotal</span>
           <span>${subtotal.toFixed(2)}</span>
         </div>
+        {volumeDiscount > 0 && (
+          <div className="flex justify-between text-green-600">
+            <span>Descuento por volumen</span>
+            <span>-${volumeDiscount.toFixed(2)}</span>
+          </div>
+        )}
         {couponDiscount > 0 && (
           <div className="flex justify-between text-green-600">
             <span>Descuento ({coupon?.code})</span>
@@ -36,13 +46,15 @@ export function CartSummary() {
 
       {config.discounts.couponsEnabled && <CouponInput />}
 
-      <Link
-        href="/checkout"
-        className="block w-full text-center py-2 px-4 rounded-md text-white font-medium transition-opacity hover:opacity-90"
-        style={{ backgroundColor: 'var(--brand-primary)' }}
-      >
-        Ir al checkout
-      </Link>
+      {!hideCheckoutLink && (
+        <Link
+          href="/checkout"
+          className="block w-full text-center py-2 px-4 rounded-md text-white font-medium transition-opacity hover:opacity-90"
+          style={{ backgroundColor: 'var(--brand-primary)' }}
+        >
+          Ir al checkout
+        </Link>
+      )}
     </div>
   )
 }

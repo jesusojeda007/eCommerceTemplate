@@ -1,9 +1,10 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { CartItem, Coupon, Product } from '@/lib/data/types'
+import config from '../../../client.config'
 
 function applyVolumeDiscount(product: Product, quantity: number): number {
-  if (!product.volumeDiscounts.length) return product.price
+  if (!config.discounts.volumeDiscountsEnabled || !product.volumeDiscounts.length) return product.price
 
   const applicable = product.volumeDiscounts
     .filter((d) => quantity >= d.minQty)
@@ -19,6 +20,7 @@ function applyVolumeDiscount(product: Product, quantity: number): number {
 
 interface CartSummary {
   subtotal: number
+  volumeDiscount: number
   couponDiscount: number
   total: number
 }
@@ -104,6 +106,9 @@ export const useCartStore = create<CartStore>()(
       getSummary: (): CartSummary => {
         const { items, coupon } = get()
         const subtotal = items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0)
+        const baseSubtotal = items.reduce((sum, i) => sum + i.product.price * i.quantity, 0)
+        const volumeDiscount = baseSubtotal - subtotal
+
         let couponDiscount = 0
         if (coupon) {
           couponDiscount =
@@ -112,7 +117,8 @@ export const useCartStore = create<CartStore>()(
               : Math.min(coupon.value, subtotal)
         }
         return {
-          subtotal,
+          subtotal: baseSubtotal,
+          volumeDiscount,
           couponDiscount,
           total: Math.max(0, subtotal - couponDiscount),
         }
