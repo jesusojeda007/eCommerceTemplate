@@ -47,4 +47,17 @@ describe('validateCoupon', () => {
     expect(result?.code).toBe('VERANO20')
     expect(result?.value).toBe(20)
   })
+
+  it('maps minOrderAmount correctly', async () => {
+    ;(prisma.coupon.findUnique as jest.Mock).mockResolvedValue({
+      code: 'MIN50',
+      type: 'fixed',
+      value: { toNumber: () => 15 },
+      minOrderAmount: { toNumber: () => 50 },
+      expiresAt: null,
+      active: true,
+    })
+    const result = await validateCoupon('MIN50')
+    expect(result?.minOrderAmount).toBe(50)
+  })
 })

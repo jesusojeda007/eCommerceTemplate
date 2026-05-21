@@ -46,6 +46,47 @@ describe('getProducts', () => {
       })
     )
   })
+
+  it('filters by price range', async () => {
+    ;(prisma.product.findMany as jest.Mock).mockResolvedValue([])
+    await getProducts({ minPrice: 10, maxPrice: 50 })
+    expect(prisma.product.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          price: { gte: 10, lte: 50 },
+        }),
+      })
+    )
+  })
+
+  it('filters by search term', async () => {
+    ;(prisma.product.findMany as jest.Mock).mockResolvedValue([])
+    await getProducts({ search: 'camiseta' })
+    expect(prisma.product.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          OR: [
+            { name: { contains: 'camiseta', mode: 'insensitive' } },
+            { description: { contains: 'camiseta', mode: 'insensitive' } },
+          ],
+        }),
+      })
+    )
+  })
+
+  it('maps volume discounts correctly', async () => {
+    const productWithDiscount = {
+      ...mockProduct,
+      volumeDiscounts: [
+        { id: 'd1', minQty: 3, type: 'percent', value: { toNumber: () => 10 }, productId: 'p1' },
+      ],
+    }
+    ;(prisma.product.findMany as jest.Mock).mockResolvedValue([productWithDiscount])
+    const products = await getProducts()
+    expect(products[0].volumeDiscounts).toHaveLength(1)
+    expect(products[0].volumeDiscounts[0].value).toBe(10)
+    expect(products[0].volumeDiscounts[0].type).toBe('percent')
+  })
 })
 
 describe('getProduct', () => {
