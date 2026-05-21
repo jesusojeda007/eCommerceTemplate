@@ -1,4 +1,4 @@
-import type { CartItem } from '@/lib/data/types'
+import type { CartItem, Customer } from '@/lib/data/types'
 import type { CheckoutAdapter } from './types'
 
 interface QRConfig {
@@ -15,7 +15,7 @@ export class QRAdapter implements CheckoutAdapter {
     this.config = config
   }
 
-  async handleCheckout(_items: CartItem[], _total: number): Promise<void> {
+  async handleCheckout(_items: CartItem[], _total: number, _customer?: Customer): Promise<void> {
     this.config.onShow(this.config.imageUrl, this.config.instructions)
   }
 }

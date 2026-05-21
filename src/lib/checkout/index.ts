@@ -1,6 +1,7 @@
 import config from '../../../client.config'
 import { WhatsAppAdapter } from './whatsapp'
 import { PlaceholderAdapter } from './placeholder'
+import { QRAdapter } from './qr'
 import type { CheckoutAdapter } from './types'
 
 export function getCheckoutAdapter(
@@ -10,7 +11,6 @@ export function getCheckoutAdapter(
     case 'whatsapp':
       return new WhatsAppAdapter(config.whatsapp)
     case 'qr': {
-      const { QRAdapter } = require('./qr')
       return new QRAdapter({
         imageUrl: config.checkout.qr?.imageUrl ?? '',
         instructions: config.checkout.qr?.instructions ?? '',
