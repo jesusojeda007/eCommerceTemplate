@@ -24,7 +24,7 @@ async function main() {
     create: { slug: 'electronica', name: 'Electrónica' },
   })
 
-  // Products
+  // Products — each product now has variants instead of top-level price/stock
   await prisma.product.upsert({
     where: { slug: 'camiseta-blanca' },
     update: {},
@@ -33,15 +33,15 @@ async function main() {
       name: 'Camiseta Blanca',
       description: 'Camiseta de algodón 100%, corte clásico. Ideal para el día a día.',
       images: ['https://placehold.co/600x600?text=Camiseta'],
-      price: 25.00,
-      compareAtPrice: 35.00,
-      stock: 50,
       categoryId: ropa.id,
       volumeDiscounts: {
         create: [
           { minQty: 3, type: 'percent', value: 10 },
           { minQty: 5, type: 'percent', value: 20 },
         ],
+      },
+      variants: {
+        create: [{ price: 25.00, compareAtPrice: 35.00, stock: 50 }],
       },
     },
   })
@@ -54,10 +54,10 @@ async function main() {
       name: 'Jeans Slim Fit',
       description: 'Jeans de mezclilla premium, corte slim. Disponible en varios talles.',
       images: ['https://placehold.co/600x600?text=Jeans'],
-      price: 60.00,
-      compareAtPrice: null,
-      stock: 30,
       categoryId: ropa.id,
+      variants: {
+        create: [{ price: 60.00, stock: 30 }],
+      },
     },
   })
 
@@ -69,10 +69,10 @@ async function main() {
       name: 'Mochila Urbana',
       description: 'Mochila resistente al agua con compartimento para laptop de 15".',
       images: ['https://placehold.co/600x600?text=Mochila'],
-      price: 45.00,
-      compareAtPrice: 55.00,
-      stock: 20,
       categoryId: accesorios.id,
+      variants: {
+        create: [{ price: 45.00, compareAtPrice: 55.00, stock: 20 }],
+      },
     },
   })
 
@@ -84,12 +84,12 @@ async function main() {
       name: 'Auriculares Bluetooth',
       description: 'Auriculares inalámbricos con cancelación de ruido y 20h de batería.',
       images: ['https://placehold.co/600x600?text=Auriculares'],
-      price: 89.00,
-      compareAtPrice: 120.00,
-      stock: 15,
       categoryId: electronica.id,
       volumeDiscounts: {
         create: [{ minQty: 2, type: 'fixed', value: 10 }],
+      },
+      variants: {
+        create: [{ price: 89.00, compareAtPrice: 120.00, stock: 15 }],
       },
     },
   })
@@ -102,10 +102,10 @@ async function main() {
       name: 'Reloj Minimalista',
       description: 'Reloj de pulsera de diseño minimalista, correa de cuero genuino.',
       images: ['https://placehold.co/600x600?text=Reloj'],
-      price: 75.00,
-      compareAtPrice: null,
-      stock: 10,
       categoryId: accesorios.id,
+      variants: {
+        create: [{ price: 75.00, stock: 10 }],
+      },
     },
   })
 

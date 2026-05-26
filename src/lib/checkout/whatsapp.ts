@@ -17,7 +17,10 @@ export class WhatsAppAdapter implements CheckoutAdapter {
 
   formatMessage(items: CartItem[], total: number): string {
     const itemLines = items
-      .map((i) => `• ${i.product.name} x${i.quantity} — $${(i.unitPrice * i.quantity).toFixed(2)}`)
+      .map((i) => {
+        const variantPart = i.variantLabel !== 'Default' ? ` (${i.variantLabel})` : ''
+        return `• ${i.product.name}${variantPart} x${i.quantity} — $${(i.unitPrice * i.quantity).toFixed(2)}`
+      })
       .join('\n')
 
     return this.config.messageTemplate
