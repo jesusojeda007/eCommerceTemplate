@@ -20,15 +20,45 @@ model Product {
   name            String
   description     String
   images          String[]
-  price           Decimal          @db.Decimal(10, 2)
-  compareAtPrice  Decimal?         @db.Decimal(10, 2)
-  stock           Int              @default(0)
   categoryId      String
   category        Category         @relation(fields: [categoryId], references: [id])
   volumeDiscounts VolumeDiscount[]
   orderItems      OrderItem[]
+  options         ProductOption[]
+  variants        ProductVariant[]
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
+}
+
+model ProductOption {
+  id        String               @id @default(cuid())
+  productId String
+  product   Product              @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name      String
+  position  Int                  @default(0)
+  values    ProductOptionValue[]
+}
+
+model ProductOptionValue {
+  id       String           @id @default(cuid())
+  optionId String
+  option   ProductOption    @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  value    String
+  position Int              @default(0)
+  variants ProductVariant[] @relation("VariantOptionValues")
+}
+
+model ProductVariant {
+  id             String               @id @default(cuid())
+  productId      String
+  product        Product              @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sku            String?              @unique
+  price          Decimal              @db.Decimal(10, 2)
+  compareAtPrice Decimal?             @db.Decimal(10, 2)
+  stock          Int                  @default(0)
+  optionValues   ProductOptionValue[] @relation("VariantOptionValues")
+  orderItems     OrderItem[]
+  createdAt      DateTime             @default(now())
 }
 
 model VolumeDiscount {
@@ -54,6 +84,7 @@ model User {
   email     String   @unique
   name      String
   password  String
+  role      String   @default("user")
   orders    Order[]
   createdAt DateTime @default(now())
 }
@@ -72,11 +103,14 @@ model Order {
 }
 
 model OrderItem {
-  id        String  @id @default(cuid())
-  orderId   String
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  productId String
-  product   Product @relation(fields: [productId], references: [id])
-  quantity  Int
-  unitPrice Decimal @db.Decimal(10, 2)
+  id           String          @id @default(cuid())
+  orderId      String
+  order        Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId    String
+  product      Product         @relation(fields: [productId], references: [id])
+  variantId    String?
+  variant      ProductVariant? @relation(fields: [variantId], references: [id])
+  variantLabel String?
+  quantity     Int
+  unitPrice    Decimal         @db.Decimal(10, 2)
 }
