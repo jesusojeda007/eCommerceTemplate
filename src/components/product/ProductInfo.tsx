@@ -13,7 +13,7 @@ interface ProductInfoProps {
 export function ProductInfo({ product }: ProductInfoProps) {
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(
     // Auto-select the Default variant for products with no option axes
-    product.options.length === 0 ? product.variants[0] : null
+    product.options.length === 0 ? (product.variants[0] ?? null) : null
   )
 
   const minPrice = Math.min(...product.variants.map((v) => v.price))
