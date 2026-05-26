@@ -33,6 +33,10 @@ export function VariantSelector({ options, variants, selectedVariant, onSelect }
   const [selectedValues, setSelectedValues] = useState<Record<string, string>>(() =>
     buildInitialValues(options, selectedVariant),
   )
+  // Keep onSelect ref fresh so the effect never closes over a stale callback
+  const onSelectRef = useRef(onSelect)
+  onSelectRef.current = onSelect
+
   // Track whether this is the first render so we don't call onSelect on mount
   const isMounted = useRef(false)
 
@@ -43,13 +47,13 @@ export function VariantSelector({ options, variants, selectedVariant, onSelect }
     }
 
     if (Object.keys(selectedValues).length === 0) {
-      onSelect(null)
+      onSelectRef.current(null)
       return
     }
     // All axes must be selected to resolve a variant
     const allSelected = options.every((opt) => selectedValues[opt.id])
     if (!allSelected) {
-      onSelect(null)
+      onSelectRef.current(null)
       return
     }
     const match = variants.find((v) =>
@@ -58,8 +62,8 @@ export function VariantSelector({ options, variants, selectedVariant, onSelect }
         return v.optionValues.some((ov) => ov.id === selectedValueId)
       })
     )
-    onSelect(match ?? null)
-  }, [selectedValues]) // eslint-disable-line react-hooks/exhaustive-deps
+    onSelectRef.current(match ?? null)
+  }, [selectedValues, options, variants])
 
   function selectValue(optionId: string, valueId: string) {
     setSelectedValues((prev) => ({ ...prev, [optionId]: valueId }))
