@@ -41,4 +41,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# superpowers brainstorm sessions
+.superpowers/
+
 /src/generated/prisma
