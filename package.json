@@ -45,11 +45,12 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
-    "shadcn": "^4.8.0",
     "jest": "^30.4.2",
     "jest-environment-jsdom": "^30.4.1",
+    "shadcn": "^4.8.0",
     "tailwindcss": "^4",
     "ts-node": "^10.9.2",
+    "tsx": "^4.22.3",
     "typescript": "^5"
   }
 }

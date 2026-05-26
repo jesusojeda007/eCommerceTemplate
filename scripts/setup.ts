@@ -194,7 +194,7 @@ async function main() {
     create: { email: 'demo@example.com', name: 'Usuario Demo', password: hash },
   })
 
-  console.log('✅ Seed completado')
+  console.log('✅ Seed completed')
 }
 
 main()
