@@ -14,6 +14,7 @@ export interface VolumeDiscount {
 
 export interface ProductOptionValue {
   id: string
+  optionId: string
   value: string
   position: number
 }
@@ -27,6 +28,7 @@ export interface ProductOption {
 
 export interface ProductVariant {
   id: string
+  productId: string
   sku: string | null
   price: number
   compareAtPrice: number | null
