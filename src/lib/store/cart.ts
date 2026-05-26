@@ -1,21 +1,33 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { CartItem, Coupon, Product } from '@/lib/data/types'
+import type { CartItem, Coupon, Product, ProductVariant } from '@/lib/data/types'
 import config from '../../../client.config'
 
-function applyVolumeDiscount(product: Product, quantity: number): number {
-  if (!config.discounts.volumeDiscountsEnabled || !product.volumeDiscounts.length) return product.price
+function buildVariantLabel(product: Product, variant: ProductVariant): string {
+  if (product.options.length === 0) return 'Default'
+  return product.options
+    .map((opt) => {
+      const val = variant.optionValues.find((ov) =>
+        opt.values.some((v) => v.id === ov.id)
+      )
+      return val ? `${opt.name}: ${val.value}` : opt.name
+    })
+    .join(' / ')
+}
+
+function applyVolumeDiscount(product: Product, variant: ProductVariant, quantity: number): number {
+  if (!config.discounts.volumeDiscountsEnabled || !product.volumeDiscounts.length) return variant.price
 
   const applicable = product.volumeDiscounts
     .filter((d) => quantity >= d.minQty)
     .sort((a, b) => b.minQty - a.minQty)[0]
 
-  if (!applicable) return product.price
+  if (!applicable) return variant.price
 
   if (applicable.type === 'percent') {
-    return product.price * (1 - applicable.value / 100)
+    return variant.price * (1 - applicable.value / 100)
   }
-  return Math.max(0, product.price - applicable.value)
+  return Math.max(0, variant.price - applicable.value)
 }
 
 interface CartSummary {
@@ -30,9 +42,9 @@ interface CartStore {
   coupon: Coupon | null
   couponError: string | null
 
-  addItem: (product: Product, quantity?: number) => void
-  removeItem: (productId: string) => void
-  updateQuantity: (productId: string, quantity: number) => void
+  addItem: (product: Product, variant: ProductVariant, quantity?: number) => void
+  removeItem: (variantId: string) => void
+  updateQuantity: (variantId: string, quantity: number) => void
   applyCoupon: (coupon: Coupon) => void
   removeCoupon: () => void
   clearCart: () => void
@@ -46,15 +58,15 @@ export const useCartStore = create<CartStore>()(
       coupon: null,
       couponError: null,
 
-      addItem: (product, quantity = 1) => {
+      addItem: (product, variant, quantity = 1) => {
         set((state) => {
-          const existing = state.items.find((i) => i.product.id === product.id)
+          const existing = state.items.find((i) => i.variant.id === variant.id)
           if (existing) {
             const newQty = existing.quantity + quantity
             return {
               items: state.items.map((i) =>
-                i.product.id === product.id
-                  ? { ...i, quantity: newQty, unitPrice: applyVolumeDiscount(product, newQty) }
+                i.variant.id === variant.id
+                  ? { ...i, quantity: newQty, unitPrice: applyVolumeDiscount(product, variant, newQty) }
                   : i
               ),
             }
@@ -64,26 +76,29 @@ export const useCartStore = create<CartStore>()(
               ...state.items,
               {
                 product,
+                variant,
+                variantLabel: buildVariantLabel(product, variant),
                 quantity,
-                unitPrice: applyVolumeDiscount(product, quantity),
+                basePrice: variant.price,
+                unitPrice: applyVolumeDiscount(product, variant, quantity),
               },
             ],
           }
         })
       },
 
-      removeItem: (productId) =>
-        set((state) => ({ items: state.items.filter((i) => i.product.id !== productId) })),
+      removeItem: (variantId) =>
+        set((state) => ({ items: state.items.filter((i) => i.variant.id !== variantId) })),
 
-      updateQuantity: (productId, quantity) => {
+      updateQuantity: (variantId, quantity) => {
         if (quantity <= 0) {
-          get().removeItem(productId)
+          get().removeItem(variantId)
           return
         }
         set((state) => ({
           items: state.items.map((i) =>
-            i.product.id === productId
-              ? { ...i, quantity, unitPrice: applyVolumeDiscount(i.product, quantity) }
+            i.variant.id === variantId
+              ? { ...i, quantity, unitPrice: applyVolumeDiscount(i.product, i.variant, quantity) }
               : i
           ),
         }))
@@ -106,7 +121,7 @@ export const useCartStore = create<CartStore>()(
       getSummary: (): CartSummary => {
         const { items, coupon } = get()
         const subtotal = items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0)
-        const baseSubtotal = items.reduce((sum, i) => sum + i.product.price * i.quantity, 0)
+        const baseSubtotal = items.reduce((sum, i) => sum + i.basePrice * i.quantity, 0)
         const volumeDiscount = baseSubtotal - subtotal
 
         let couponDiscount = 0
