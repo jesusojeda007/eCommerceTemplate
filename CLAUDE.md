@@ -85,3 +85,50 @@ npm run test:watch  # watch mode
 - Checkout: plugin system at `src/lib/checkout/` — adapter selected by `config.checkout.mode`
 - Discounts: volume discounts computed in cart store; coupons validated via `/api/coupon/validate`
 - Auth: NextAuth v4 credentials provider — user table in PostgreSQL
+
+## AI Quick Setup
+
+This template ships with four business type profiles that define variant axes, categories, and sample products. When a developer asks you to "set up a [type] store", follow this flow:
+
+### Step 1 — Choose a business type
+
+| ID | Name | Variant axes | Categories |
+|---|---|---|---|
+| `clothing` | Ropa | Talle (XS–XXL) × Color | Hombre, Mujer, Niños, Accesorios |
+| `footwear` | Zapatería | Talle (35–46) × Color | Deportivo, Casual, Niños |
+| `electronics` | Electrónica | Color × Garantía | Audio, Móviles, Computación |
+| `food` | Comida / Nutrición | Sabor × Tamaño | Proteínas, Snacks, Bebidas |
+
+Read the profile file at `business-types/<id>.ts` to understand the available axes and sample products.
+
+### Step 2 — Edit `client.config.ts`
+
+Update at minimum: `name`, `tagline`, `theme.primary`, `whatsapp.number`, `checkout.mode`.
+
+### Step 3 — Generate `prisma/seed.ts`
+
+Change the import at the top of `prisma/seed.ts` from `clothing` to the chosen business type:
+
+```typescript
+import { footwear } from '../business-types'  // ← change this
+// ...
+await seedFromBusinessType(footwear)           // ← and this
+```
+
+The `seedFromBusinessType` function reads the profile and creates categories, options, option values, and variants automatically.
+
+### Step 4 — Run migration and seed
+
+```bash
+npx prisma migrate dev --name setup
+npx prisma db seed
+```
+
+### Creating a new business type
+
+If the client's business doesn't fit any existing profile, create `business-types/my-type.ts` implementing the `BusinessType` interface from `business-types/base.ts`, then add it to the registry in `business-types/index.ts`.
+
+Key rules:
+- `variantAxes`: list all option axes the business uses. Hex colors (`#rrggbb`) render as color circles in the UI; all other values render as text buttons.
+- `sampleProducts`: each `SampleProductVariant.options` is a `Record<axisName, axisValue>`. For products with no options, use `options: {}` — these get a "Default" variant.
+- `suggestedConfig`: partial `ClientConfig` values that make sense for this business type.

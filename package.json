@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "setup": "npx tsx scripts/setup.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",

@@ -2,114 +2,96 @@ import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import bcrypt from 'bcryptjs'
 import 'dotenv/config'
+import { clothing } from '../business-types'
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! })
 const prisma = new PrismaClient({ adapter })
 
+type BT = typeof clothing
+
+async function seedFromBusinessType(bt: BT) {
+  const categoryMap: Record<string, { id: string }> = {}
+
+  for (const cat of bt.defaultCategories) {
+    const created = await prisma.category.upsert({
+      where: { slug: cat.slug },
+      update: {},
+      create: { slug: cat.slug, name: cat.name },
+    })
+    categoryMap[cat.slug] = created
+  }
+
+  for (const sp of bt.sampleProducts) {
+    const category = categoryMap[sp.categorySlug]
+    if (!category) continue
+
+    const hasOptions =
+      sp.variants.length > 0 && Object.keys(sp.variants[0].options).length > 0
+    const optionAxes = bt.variantAxes.filter((axis) =>
+      sp.variants.some((v) => axis.name in v.options)
+    )
+
+    const existing = await prisma.product.findUnique({ where: { slug: sp.slug } })
+    if (existing) await prisma.product.delete({ where: { slug: sp.slug } })
+
+    await prisma.product.create({
+      data: {
+        slug: sp.slug,
+        name: sp.name,
+        description: sp.description,
+        images: sp.images,
+        categoryId: category.id,
+        options: hasOptions
+          ? {
+              create: optionAxes.map((axis, axisIdx) => ({
+                name: axis.name,
+                position: axisIdx,
+                values: {
+                  create: axis.values.map((val, valIdx) => ({
+                    value: val,
+                    position: valIdx,
+                  })),
+                },
+              })),
+            }
+          : undefined,
+      },
+    })
+
+    const product = await prisma.product.findUnique({
+      where: { slug: sp.slug },
+      include: { options: { include: { values: true } } },
+    })
+    if (!product) continue
+
+    for (const sv of sp.variants) {
+      const optionValueIds: string[] = []
+      for (const [axisName, axisValue] of Object.entries(sv.options)) {
+        const option = product.options.find((o) => o.name === axisName)
+        const optionValue = option?.values.find((v) => v.value === axisValue)
+        if (optionValue) optionValueIds.push(optionValue.id)
+      }
+
+      await prisma.productVariant.create({
+        data: {
+          productId: product.id,
+          price: sv.price,
+          compareAtPrice: sv.compareAtPrice ?? null,
+          stock: sv.stock,
+          sku: sv.sku ?? null,
+          optionValues:
+            optionValueIds.length > 0
+              ? { connect: optionValueIds.map((id) => ({ id })) }
+              : undefined,
+        },
+      })
+    }
+  }
+}
+
 async function main() {
-  // Categories
-  const ropa = await prisma.category.upsert({
-    where: { slug: 'ropa' },
-    update: {},
-    create: { slug: 'ropa', name: 'Ropa' },
-  })
-  const accesorios = await prisma.category.upsert({
-    where: { slug: 'accesorios' },
-    update: {},
-    create: { slug: 'accesorios', name: 'Accesorios' },
-  })
-  const electronica = await prisma.category.upsert({
-    where: { slug: 'electronica' },
-    update: {},
-    create: { slug: 'electronica', name: 'Electrónica' },
-  })
+  await seedFromBusinessType(clothing)
 
-  // Products — each product now has variants instead of top-level price/stock
-  await prisma.product.upsert({
-    where: { slug: 'camiseta-blanca' },
-    update: {},
-    create: {
-      slug: 'camiseta-blanca',
-      name: 'Camiseta Blanca',
-      description: 'Camiseta de algodón 100%, corte clásico. Ideal para el día a día.',
-      images: ['https://placehold.co/600x600?text=Camiseta'],
-      categoryId: ropa.id,
-      volumeDiscounts: {
-        create: [
-          { minQty: 3, type: 'percent', value: 10 },
-          { minQty: 5, type: 'percent', value: 20 },
-        ],
-      },
-      variants: {
-        create: [{ price: 25.00, compareAtPrice: 35.00, stock: 50 }],
-      },
-    },
-  })
-
-  await prisma.product.upsert({
-    where: { slug: 'jeans-slim' },
-    update: {},
-    create: {
-      slug: 'jeans-slim',
-      name: 'Jeans Slim Fit',
-      description: 'Jeans de mezclilla premium, corte slim. Disponible en varios talles.',
-      images: ['https://placehold.co/600x600?text=Jeans'],
-      categoryId: ropa.id,
-      variants: {
-        create: [{ price: 60.00, stock: 30 }],
-      },
-    },
-  })
-
-  await prisma.product.upsert({
-    where: { slug: 'mochila-urbana' },
-    update: {},
-    create: {
-      slug: 'mochila-urbana',
-      name: 'Mochila Urbana',
-      description: 'Mochila resistente al agua con compartimento para laptop de 15".',
-      images: ['https://placehold.co/600x600?text=Mochila'],
-      categoryId: accesorios.id,
-      variants: {
-        create: [{ price: 45.00, compareAtPrice: 55.00, stock: 20 }],
-      },
-    },
-  })
-
-  await prisma.product.upsert({
-    where: { slug: 'auriculares-bt' },
-    update: {},
-    create: {
-      slug: 'auriculares-bt',
-      name: 'Auriculares Bluetooth',
-      description: 'Auriculares inalámbricos con cancelación de ruido y 20h de batería.',
-      images: ['https://placehold.co/600x600?text=Auriculares'],
-      categoryId: electronica.id,
-      volumeDiscounts: {
-        create: [{ minQty: 2, type: 'fixed', value: 10 }],
-      },
-      variants: {
-        create: [{ price: 89.00, compareAtPrice: 120.00, stock: 15 }],
-      },
-    },
-  })
-
-  await prisma.product.upsert({
-    where: { slug: 'reloj-minimalista' },
-    update: {},
-    create: {
-      slug: 'reloj-minimalista',
-      name: 'Reloj Minimalista',
-      description: 'Reloj de pulsera de diseño minimalista, correa de cuero genuino.',
-      images: ['https://placehold.co/600x600?text=Reloj'],
-      categoryId: accesorios.id,
-      variants: {
-        create: [{ price: 75.00, stock: 10 }],
-      },
-    },
-  })
-
-  // Coupons
   await prisma.coupon.upsert({
     where: { code: 'VERANO20' },
     update: {},
@@ -121,7 +103,6 @@ async function main() {
     create: { code: 'DESCUENTO10', type: 'fixed', value: 10, minOrderAmount: 50, active: true },
   })
 
-  // Demo user (password: "password123")
   const hash = await bcrypt.hash('password123', 10)
   await prisma.user.upsert({
     where: { email: 'demo@example.com' },
