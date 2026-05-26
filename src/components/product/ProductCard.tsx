@@ -2,6 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardFooter } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { AddToCartButton } from './AddToCartButton'
 import type { Product } from '@/lib/data/types'
 
@@ -10,9 +11,19 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product }: ProductCardProps) {
-  const hasDiscount = product.compareAtPrice && product.compareAtPrice > product.price
+  const prices = product.variants.map((v) => v.price)
+  const minPrice = Math.min(...prices)
+  const maxPrice = Math.max(...prices)
+  const hasMultiplePrices = minPrice !== maxPrice
+
+  // Use cheapest variant for discount badge
+  const cheapestVariant = product.variants.find((v) => v.price === minPrice)
+  const hasDiscount =
+    !hasMultiplePrices &&
+    cheapestVariant?.compareAtPrice &&
+    cheapestVariant.compareAtPrice > minPrice
   const discountPct = hasDiscount
-    ? Math.round((1 - product.price / product.compareAtPrice!) * 100)
+    ? Math.round((1 - minPrice / cheapestVariant!.compareAtPrice!) * 100)
     : 0
 
   return (
@@ -37,16 +48,30 @@ export function ProductCard({ product }: ProductCardProps) {
           <h3 className="font-medium line-clamp-2 hover:underline">{product.name}</h3>
         </Link>
         <div className="mt-1 flex items-center gap-2">
-          <span className="text-lg font-bold">${product.price.toFixed(2)}</span>
-          {hasDiscount && (
-            <span className="text-sm text-muted-foreground line-through">
-              ${product.compareAtPrice!.toFixed(2)}
-            </span>
+          {hasMultiplePrices ? (
+            <span className="text-lg font-bold">Desde ${minPrice.toFixed(2)}</span>
+          ) : (
+            <>
+              <span className="text-lg font-bold">${minPrice.toFixed(2)}</span>
+              {hasDiscount && (
+                <span className="text-sm text-muted-foreground line-through">
+                  ${cheapestVariant!.compareAtPrice!.toFixed(2)}
+                </span>
+              )}
+            </>
           )}
         </div>
       </CardContent>
       <CardFooter className="p-4 pt-0">
-        <AddToCartButton product={product} />
+        {product.options.length > 0 ? (
+          <Link href={`/products/${product.slug}`} className="w-full">
+            <Button variant="outline" className="w-full">
+              Ver opciones
+            </Button>
+          </Link>
+        ) : (
+          <AddToCartButton product={product} />
+        )}
       </CardFooter>
     </Card>
   )
