@@ -11,7 +11,7 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product }: ProductCardProps) {
-  const prices = product.variants.map((v) => v.price)
+  const prices = product.variants.length > 0 ? product.variants.map((v) => v.price) : [0]
   const minPrice = Math.min(...prices)
   const maxPrice = Math.max(...prices)
   const hasMultiplePrices = minPrice !== maxPrice

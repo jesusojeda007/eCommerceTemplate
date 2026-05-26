@@ -33,7 +33,7 @@ export default function CartDrawer({ trigger }: CartDrawerProps) {
         ) : (
           <div className="flex flex-col flex-1 overflow-y-auto gap-4 mt-4">
             {items.map((item) => (
-              <CartItem key={item.product.id} item={item} />
+              <CartItem key={item.variant.id} item={item} />
             ))}
             <CartSummary hideCheckoutLink />
             <Link

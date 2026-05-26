@@ -16,7 +16,7 @@ export function ProductInfo({ product }: ProductInfoProps) {
     product.options.length === 0 ? (product.variants[0] ?? null) : null
   )
 
-  const minPrice = Math.min(...product.variants.map((v) => v.price))
+  const minPrice = product.variants.length > 0 ? Math.min(...product.variants.map((v) => v.price)) : 0
   const displayPrice = selectedVariant?.price ?? minPrice
   const displayCompareAt = selectedVariant?.compareAtPrice ?? null
   const hasDiscount = displayCompareAt !== null && displayCompareAt > displayPrice
