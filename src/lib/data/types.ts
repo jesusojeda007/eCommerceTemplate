@@ -12,18 +12,39 @@ export interface VolumeDiscount {
   productId: string
 }
 
+export interface ProductOptionValue {
+  id: string
+  value: string
+  position: number
+}
+
+export interface ProductOption {
+  id: string
+  name: string
+  position: number
+  values: ProductOptionValue[]
+}
+
+export interface ProductVariant {
+  id: string
+  sku: string | null
+  price: number
+  compareAtPrice: number | null
+  stock: number
+  optionValues: ProductOptionValue[]
+}
+
 export interface Product {
   id: string
   slug: string
   name: string
   description: string
   images: string[]
-  price: number
-  compareAtPrice: number | null
-  stock: number
   categoryId: string
   category: Category
   volumeDiscounts: VolumeDiscount[]
+  options: ProductOption[]
+  variants: ProductVariant[]
 }
 
 export interface Coupon {
@@ -44,8 +65,11 @@ export interface ProductFilters {
 
 export interface CartItem {
   product: Product
+  variant: ProductVariant
+  variantLabel: string       // "Talle: M / Color: Rojo" or "Default"
   quantity: number
-  unitPrice: number
+  unitPrice: number          // after volume discount
+  basePrice: number          // variant.price before discount
 }
 
 export interface Customer {
