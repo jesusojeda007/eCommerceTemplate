@@ -25,7 +25,7 @@ function applyVolumeDiscount(product: Product, variant: ProductVariant, quantity
   if (!applicable) return variant.price
 
   if (applicable.type === 'percent') {
-    return variant.price * (1 - applicable.value / 100)
+    return Math.round(variant.price * (1 - applicable.value / 100) * 100) / 100
   }
   return Math.max(0, variant.price - applicable.value)
 }
@@ -92,7 +92,7 @@ export const useCartStore = create<CartStore>()(
 
       updateQuantity: (variantId, quantity) => {
         if (quantity <= 0) {
-          get().removeItem(variantId)
+          set((state) => ({ items: state.items.filter((i) => i.variant.id !== variantId) }))
           return
         }
         set((state) => ({
